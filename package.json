@@ -1,0 +1,41 @@
+{
+  "name": "balanced-solver-sdk",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Balanced Network intents SDK",
+  "keywords": [
+    "balanced-solver-sdk"
+  ],
+  "homepage": "https://github.com/balancednetwork/balanced-solver-sdk",
+  "bugs": {
+    "url": "https://github.com/balancednetwork/balanced-solver-sdk/issues"
+  },
+  "author": "R.M | Icon Foundation",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/balancednetwork/balanced-solver-sdk.git"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "dev": "vitest",
+    "ci": "npm run build && npm run check-format && npm run check-exports && npm run test",
+    "format": "prettier --write .",
+    "check-format": "prettier --check .",
+    "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
+    "prepublishOnly": "npm run ci",
+    "local-release": "changeset version && changeset publish"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.16.4",
+    "@changesets/cli": "^2.27.9",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
+  }
+}
