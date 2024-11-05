@@ -1,8 +1,8 @@
 import { type Address, type Hash, parseEventLogs, type TransactionReceipt } from "viem"
-import { type IntentExecutePayload } from "./IntentService.js"
+import { type CreateIntentOrderPayload } from "./IntentService.js"
 import { erc20Abi, intentAbi } from "../abis/index.js"
 import { SwapOrder, EvmProvider } from "../entities/index.js"
-import type { EvmChainConfig, Result } from "../types.js"
+import type { ChainConfig, EvmChainConfig, Result } from "../types.js"
 
 export class EvmIntentService {
   private constructor() {}
@@ -78,22 +78,24 @@ export class EvmIntentService {
   }
 
   /**
-   * Execute EVM intent order
+   * Create EVM intent order
    * @param payload - Intent payload
-   * @param chainConfig - EVM chain config
+   * @param fromChainConfig - EVM chain config
+   * @param toChainConfig - Destination chain config
    * @param provider - EVM provider
    */
-  static async executeOrder(
-    payload: IntentExecutePayload,
-    chainConfig: EvmChainConfig,
+  static async createIntentOrder(
+    payload: CreateIntentOrderPayload,
+    fromChainConfig: EvmChainConfig,
+    toChainConfig: ChainConfig,
     provider: EvmProvider,
   ): Promise<Result<Hash>> {
     try {
       const intent = new SwapOrder(
         0n,
-        chainConfig.intentContract,
-        chainConfig.nid,
-        chainConfig.nid,
+        fromChainConfig.intentContract,
+        fromChainConfig.nid,
+        toChainConfig.nid,
         payload.fromAddress,
         payload.toAddress,
         payload.token,
@@ -103,12 +105,12 @@ export class EvmIntentService {
         new Uint8Array(),
       )
 
-      const isNative = payload.token.toLowerCase() == chainConfig.nativeToken.toLowerCase()
+      const isNative = payload.token.toLowerCase() == fromChainConfig.nativeToken.toLowerCase()
 
       return {
         ok: true,
         value: await provider.walletClient.writeContract({
-          address: chainConfig.intentContract,
+          address: fromChainConfig.intentContract,
           abi: intentAbi,
           functionName: "swap",
           args: [intent.toObjectData()],
@@ -126,13 +128,13 @@ export class EvmIntentService {
 
   /**
    * Retrieve Intent order
-   * @param hash - Transaction hash
+   * @param txHash - Transaction hash
    * @param chainConfig - EVM chain config
    * @param provider - EVM provider
    */
-  static async getOrder(hash: Hash, chainConfig: EvmChainConfig, provider: EvmProvider): Promise<Result<SwapOrder>> {
+  static async getOrder(txHash: Hash, chainConfig: EvmChainConfig, provider: EvmProvider): Promise<Result<SwapOrder>> {
     try {
-      const receipt = await provider.publicClient.getTransactionReceipt({ hash })
+      const receipt = await provider.publicClient.getTransactionReceipt({ hash: txHash })
       const logs = parseEventLogs({
         abi: intentAbi,
         eventName: "SwapIntent",
@@ -162,7 +164,7 @@ export class EvmIntentService {
 
       return {
         ok: false,
-        error: new Error(`No order found for ${hash}`),
+        error: new Error(`No order found for ${txHash}`),
       }
     } catch (e) {
       return {
