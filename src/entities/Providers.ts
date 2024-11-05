@@ -8,6 +8,9 @@ import {
   type PublicClient,
   type WalletClient,
 } from "viem"
+import { type Wallet, type WalletAccount } from "@mysten/wallet-standard"
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/client"
+import type { SuiNetworkType } from "../types.js"
 
 export type CustomProvider = { request(...args: any): Promise<any> }
 
@@ -27,7 +30,15 @@ export class EvmProvider {
 }
 
 export class SuiProvider {
-  // TODO
+  public readonly wallet: Wallet
+  public readonly account: WalletAccount
+  public readonly client: SuiClient
+
+  constructor(wallet: Wallet, account: WalletAccount, net: SuiNetworkType) {
+    this.wallet = wallet
+    this.account = account
+    this.client = new SuiClient({ url: getFullnodeUrl(net) })
+  }
 }
 
 export type ChainProviderType = EvmProvider | SuiProvider
@@ -37,3 +48,5 @@ export type ChainProvider<T = undefined> = T extends "evm"
   : T extends "sui"
     ? SuiProvider
     : ChainProviderType
+
+export type NonEmptyChainProviders = [ChainProvider, ...ChainProvider[]]

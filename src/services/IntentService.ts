@@ -2,8 +2,9 @@ import { type Address, type Hash } from "viem"
 import type { Chain, ChainConfig, ChainType, Result } from "../types.js"
 import { chainConfig, supportedChains } from "../constants.js"
 import { isEvmChainConfig, isSuiChainConfig } from "../guards.js"
-import { type ChainProvider, EvmProvider, SuiProvider } from "../entities/index.js"
+import { type ChainProvider, type NonEmptyChainProviders, EvmProvider, SuiProvider } from "../entities/index.js"
 import { EvmIntentService } from "./EvmIntentService.js"
+import { SuiIntentService } from "./SuiIntentService.js"
 
 export type IntentQuoteRequest = {
   srcNID: string
@@ -20,7 +21,7 @@ export type IntentQuoteResponse = {
 
 export type IntentExecutionRequest = {
   uuid: string
-  txData: any // TODO: introduce typing (evm and sui tx type)
+  txHash: string
 }
 
 export type IntentExecutionResponse = {
@@ -28,7 +29,7 @@ export type IntentExecutionResponse = {
   code: number
 }
 
-export type IntentExecutePayload = {
+export type CreateIntentOrderPayload = {
   fromAddress: string
   toAddress: string
   fromChain: Chain
@@ -40,9 +41,9 @@ export type IntentExecutePayload = {
 }
 
 export class IntentService {
-  private readonly providers: ChainProvider[]
+  private readonly providers: NonEmptyChainProviders
 
-  constructor(chainProviders: ChainProvider[]) {
+  constructor(chainProviders: NonEmptyChainProviders) {
     this.providers = chainProviders
   }
 
@@ -55,7 +56,7 @@ export class IntentService {
    * Check whether intent contract is allowed to move the given payload amount
    * @param payload -Intent payload
    */
-  public async isAllowanceValid(payload: IntentExecutePayload): Promise<Result<boolean>> {
+  public async isAllowanceValid(payload: CreateIntentOrderPayload): Promise<Result<boolean>> {
     try {
       const fromChainConfig = chainConfig[payload.fromChain]
 
@@ -75,11 +76,10 @@ export class IntentService {
           this.getChainProvider(fromChainConfig.chain.type),
         )
       } else if (isSuiChainConfig(fromChainConfig)) {
-        // TODO
-
+        // no allowance required on SUI
         return {
-          ok: false,
-          error: new Error(`Not implemented`),
+          ok: true,
+          value: true,
         }
       } else {
         return {
@@ -95,7 +95,25 @@ export class IntentService {
     }
   }
 
-  public async executeIntent(payload: IntentExecutePayload): Promise<Result<Hash>> {
+  public async executeIntentOrder(payload: CreateIntentOrderPayload): Promise<Result<any>> {
+    try {
+      const txHash = await this.createIntentOrder(payload)
+
+      // TODO
+
+      return {
+        ok: true,
+        value: undefined,
+      }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e,
+      }
+    }
+  }
+
+  private async createIntentOrder(payload: CreateIntentOrderPayload): Promise<Result<Hash | string>> {
     try {
       const fromChainConfig = chainConfig[payload.fromChain]
 
@@ -116,17 +134,19 @@ export class IntentService {
       }
 
       if (isEvmChainConfig(fromChainConfig)) {
-        return EvmIntentService.executeOrder(
+        return EvmIntentService.createIntentOrder(
           payload,
           fromChainConfig,
+          toChainConfig,
           this.getChainProvider(fromChainConfig.chain.type),
         )
       } else if (isSuiChainConfig(fromChainConfig)) {
-        // TODO
-        return {
-          ok: false,
-          error: new Error(`SUI not implemented`),
-        }
+        return SuiIntentService.createIntentOrder(
+          payload,
+          fromChainConfig,
+          toChainConfig,
+          this.getChainProvider(fromChainConfig.chain.type),
+        )
       } else {
         return {
           ok: false,
