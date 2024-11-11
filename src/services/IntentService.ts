@@ -1,5 +1,5 @@
 import { type Address, type Hash } from "viem"
-import type { Chain, ChainConfig, ChainType, Result } from "../types.js"
+import type { ChainName, ChainConfig, ChainType, Result } from "../types.js"
 import { chainConfig, supportedChains } from "../constants.js"
 import { isEvmChainConfig, isSuiChainConfig } from "../guards.js"
 import { type ChainProvider, type NonEmptyChainProviders, EvmProvider, SuiProvider } from "../entities/index.js"
@@ -32,8 +32,8 @@ export type IntentExecutionResponse = {
 export type CreateIntentOrderPayload = {
   fromAddress: string
   toAddress: string
-  fromChain: Chain
-  toChain: Chain
+  fromChain: ChainName
+  toChain: ChainName
   token: string
   amount: bigint
   toToken: string
@@ -173,11 +173,11 @@ export class IntentService {
     throw new Error(`Unsupported chain type: ${chainType}`)
   }
 
-  public static getSupportedChains(): Chain[] {
+  public static getSupportedChains(): ChainName[] {
     return supportedChains
   }
 
-  public static getChainConfig(chain: Chain): ChainConfig {
+  public static getChainConfig(chain: ChainName): ChainConfig {
     const data = chainConfig[chain]
 
     if (!chainConfig) {
