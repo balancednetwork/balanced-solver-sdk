@@ -1,24 +1,30 @@
 import type { Address } from "viem"
 
 export type ChainType = "evm" | "sui"
-export type Chain = "sui" | "arb"
+export type ChainName = "sui" | "arb"
 export type ChainInfo<T extends ChainType> = {
-  name: Chain
+  name: ChainName
   type: T
 }
 
-export type EvmChainConfig = {
-  chain: ChainInfo<"evm">
+export type Token = {
+  symbol: string
+  decimals: number
+  address: string
+}
+
+export type BaseChainConfig<T extends ChainType> = {
+  chain: ChainInfo<T>
   nid: string
-} & {
+  supportedTokens: Token[]
+}
+
+export type EvmChainConfig = BaseChainConfig<"evm"> & {
   intentContract: Address
   nativeToken: Address
 }
 
-export type SuiChainConfig = {
-  chain: ChainInfo<"sui">
-  nid: string
-} & {
+export type SuiChainConfig = BaseChainConfig<"sui"> & {
   packageId: string
   storageId: string
   nativeToken: string
