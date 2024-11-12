@@ -1,62 +1,67 @@
 import { type Address, type Hash } from "viem"
-import type { ChainName, ChainConfig, ChainType, Result } from "../types.js"
+import {
+  type ChainName,
+  type ChainConfig,
+  type Result,
+  type IntentQuoteRequest,
+  type IntentQuoteResponse,
+  type CreateIntentOrderPayload,
+  type IntentErrorResponse,
+  type IntentExecutionResponse,
+  type IntentStatusRequest,
+  type IntentStatusResponse,
+} from "../types.js"
 import { chainConfig, supportedChains } from "../constants.js"
 import { isEvmChainConfig, isSuiChainConfig } from "../guards.js"
-import { type ChainProvider, type NonEmptyChainProviders, EvmProvider, SuiProvider } from "../entities/index.js"
+import { EvmProvider, SuiProvider, type GetChainProviderType } from "../entities/index.js"
 import { EvmIntentService } from "./EvmIntentService.js"
 import { SuiIntentService } from "./SuiIntentService.js"
-
-export type IntentQuoteRequest = {
-  srcNID: string
-  dstNID: string
-  token: Address
-  amount: string
-  toToken: Address
-}
-
-export type IntentQuoteResponse = {
-  quote: string
-  uuid: string
-}
-
-export type IntentExecutionRequest = {
-  uuid: string
-  txHash: string
-}
-
-export type IntentExecutionResponse = {
-  message: string
-  code: number
-}
-
-export type CreateIntentOrderPayload = {
-  fromAddress: string
-  toAddress: string
-  fromChain: ChainName
-  toChain: ChainName
-  token: string
-  amount: bigint
-  toToken: string
-  toAmount: bigint
-}
+import { SolverApiService } from "./SolverApiService.js"
+import invariant from "tiny-invariant"
 
 export class IntentService {
-  private readonly providers: NonEmptyChainProviders
+  private constructor() {}
 
-  constructor(chainProviders: NonEmptyChainProviders) {
-    this.providers = chainProviders
-  }
-
-  async getQuote(payload: IntentQuoteRequest): Promise<IntentQuoteResponse> {
-    // TODO
-    return Promise.resolve({} as IntentQuoteResponse)
+  /**
+   * Get current best quote for token amount
+   * @example
+   * // request
+   * {
+   *     "token_src": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+   *     "token_src_blockchain_id": "42161",
+   *     "token_dst": "0x2::sui::SUI",
+   *     "token_dst_blockchain_id": "101",
+   *     "src_amount": "0.00001"
+   * }
+   *
+   * // response
+   * {
+   *   "ok": true,
+   *   "value": {
+   *      "output": {
+   *        "expected_output":"0.009813013",
+   *        "uuid":"e2795d2c-14a5-4d18-9be6-a257d7c9d274"
+   *      }
+   *   }
+   * }
+   */
+  public static async getQuote(payload: IntentQuoteRequest): Promise<Result<IntentQuoteResponse, IntentErrorResponse>> {
+    return SolverApiService.getQuote(payload)
   }
 
   /**
    * Check whether intent contract is allowed to move the given payload amount
    * @param payload -Intent payload
+   * @param provider - ChainProviderType
+   * @return Boolean - valid = true, invalid = false
    */
-  public async isAllowanceValid(payload: CreateIntentOrderPayload): Promise<Result<boolean>> {
+  public static async isAllowanceValid<T extends CreateIntentOrderPayload>(
+    payload: CreateIntentOrderPayload,
+    provider: GetChainProviderType<T["fromChain"]>,
+  ): Promise<Result<boolean>> {
+    invariant(payload.amount > 0n, "Invalid amount")
+    invariant(payload.amount > 0n, "Invalid amount")
+
     try {
       const fromChainConfig = chainConfig[payload.fromChain]
 
@@ -68,13 +73,20 @@ export class IntentService {
       }
 
       if (isEvmChainConfig(fromChainConfig)) {
-        return EvmIntentService.isAllowanceValid(
-          payload.token as Address,
-          payload.amount,
-          payload.fromAddress as Address,
-          fromChainConfig,
-          this.getChainProvider(fromChainConfig.chain.type),
-        )
+        if (provider instanceof EvmProvider) {
+          return EvmIntentService.isAllowanceValid(
+            payload.token as Address,
+            payload.amount,
+            payload.fromAddress as Address,
+            fromChainConfig,
+            provider,
+          )
+        } else {
+          return {
+            ok: false,
+            error: new Error(`[IntentService.isAllowanceValid] provider should be of type EvmProvider`),
+          }
+        }
       } else if (isSuiChainConfig(fromChainConfig)) {
         // no allowance required on SUI
         return {
@@ -95,17 +107,42 @@ export class IntentService {
     }
   }
 
-  public async executeIntentOrder(payload: CreateIntentOrderPayload): Promise<Result<any>> {
+  /**
+   * Execute intent order
+   * @example
+   * // request
+   * {
+   *     "intent_tx_hash": "0xba3dce19347264db32ced212ff1a2036f20d9d2c7493d06af15027970be061af",
+   *     "quote_uuid": "a0dd7652-b360-4123-ab2d-78cfbcd20c6b"
+   * }
+   *
+   * // response
+   * {
+   *   "ok": true,
+   *   "value": {
+   *      "output": {
+   *        "answer":"OK",
+   *        "task_id":"a0dd7652-b360-4123-ab2d-78cfbcd20c6b"
+   *      }
+   *   }
+   * }
+   */
+  public static async executeIntentOrder<T extends CreateIntentOrderPayload>(
+    payload: CreateIntentOrderPayload,
+    provider: GetChainProviderType<T["fromChain"]>,
+  ): Promise<Result<IntentExecutionResponse, IntentErrorResponse | Error | unknown>> {
     try {
-      const txHash = await this.createIntentOrder(payload)
+      const intentOrderResult = await IntentService.createIntentOrder(payload, provider)
 
-      // TODO
-
-      return {
-        ok: true,
-        value: undefined,
+      if (intentOrderResult.ok) {
+        return SolverApiService.postExecution({
+          intent_tx_hash: intentOrderResult.value,
+          quote_uuid: payload.quote_uuid,
+        })
+      } else {
+        return intentOrderResult
       }
-    } catch (e) {
+    } catch (e: any) {
       return {
         ok: false,
         error: e,
@@ -113,7 +150,10 @@ export class IntentService {
     }
   }
 
-  private async createIntentOrder(payload: CreateIntentOrderPayload): Promise<Result<Hash | string>> {
+  private static async createIntentOrder<T extends CreateIntentOrderPayload>(
+    payload: T,
+    provider: GetChainProviderType<T["fromChain"]>,
+  ): Promise<Result<Hash | string>> {
     try {
       const fromChainConfig = chainConfig[payload.fromChain]
 
@@ -129,24 +169,28 @@ export class IntentService {
       if (!toChainConfig) {
         return {
           ok: false,
-          error: new Error(`Unsupported toChainConfig: ${toChainConfig}`),
+          error: new Error(`Unsupported toChain: ${payload.toChain}`),
         }
       }
 
       if (isEvmChainConfig(fromChainConfig)) {
-        return EvmIntentService.createIntentOrder(
-          payload,
-          fromChainConfig,
-          toChainConfig,
-          this.getChainProvider(fromChainConfig.chain.type),
-        )
+        if (provider instanceof EvmProvider) {
+          return EvmIntentService.createIntentOrder(payload, fromChainConfig, toChainConfig, provider)
+        } else {
+          return {
+            ok: false,
+            error: new Error(`[IntentService.createIntentOrder] provider should be of type EvmProvider`),
+          }
+        }
       } else if (isSuiChainConfig(fromChainConfig)) {
-        return SuiIntentService.createIntentOrder(
-          payload,
-          fromChainConfig,
-          toChainConfig,
-          this.getChainProvider(fromChainConfig.chain.type),
-        )
+        if (provider instanceof SuiProvider) {
+          return SuiIntentService.createIntentOrder(payload, fromChainConfig, toChainConfig, provider)
+        } else {
+          return {
+            ok: false,
+            error: new Error(`[IntentService.createIntentOrder] provider should be of type SuiProvider`),
+          }
+        }
       } else {
         return {
           ok: false,
@@ -161,22 +205,41 @@ export class IntentService {
     }
   }
 
-  private getChainProvider<T extends ChainType>(chainType: T): ChainProvider<T> {
-    for (const p of this.providers) {
-      if (p instanceof EvmProvider && chainType == "evm") {
-        return p as ChainProvider<T>
-      } else if (p instanceof SuiProvider && chainType == "sui") {
-        return p as ChainProvider<T>
-      }
-    }
-
-    throw new Error(`Unsupported chain type: ${chainType}`)
+  /**
+   * Get current intent status
+   * @example
+   * // request
+   * {
+   *     "task_id": "a0dd7652-b360-4123-ab2d-78cfbcd20c6b"
+   * }
+   *
+   * // response
+   * {
+   *   "ok": true,
+   *   "value": {
+   *      "output": {
+   *        "status":3,
+   *        "tx_hash":"0xabcdef"
+   *      }
+   *   }
+   * }
+   */
+  public static async getStatus(
+    intentStatusRequest: IntentStatusRequest,
+  ): Promise<Result<IntentStatusResponse, IntentErrorResponse>> {
+    return SolverApiService.getStatus(intentStatusRequest)
   }
 
+  /**
+   * Get all available chains supporting intents
+   */
   public static getSupportedChains(): ChainName[] {
     return supportedChains
   }
 
+  /**
+   * Get config of a specific chain
+   */
   public static getChainConfig(chain: ChainName): ChainConfig {
     const data = chainConfig[chain]
 

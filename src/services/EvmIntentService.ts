@@ -1,8 +1,7 @@
 import { type Address, type Hash, parseEventLogs, type TransactionReceipt } from "viem"
-import { type CreateIntentOrderPayload } from "./IntentService.js"
 import { erc20Abi, intentAbi } from "../abis/index.js"
 import { SwapOrder, EvmProvider } from "../entities/index.js"
-import type { ChainConfig, EvmChainConfig, Result } from "../types.js"
+import type { ChainConfig, CreateIntentOrderPayload, EvmChainConfig, Result } from "../types.js"
 
 export class EvmIntentService {
   private constructor() {}

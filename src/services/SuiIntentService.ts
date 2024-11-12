@@ -1,8 +1,7 @@
-import { type CreateIntentOrderPayload } from "./IntentService.js"
-import { SwapOrder, SuiProvider } from "../entities/index.js"
-import type { ChainConfig, Result, SuiChainConfig } from "../types.js"
+import type { ChainConfig, CreateIntentOrderPayload, Result, SuiChainConfig } from "../types.js"
 import { Transaction, type TransactionResult } from "@mysten/sui/transactions"
 import { signAndExecuteTransaction } from "@mysten/wallet-standard"
+import { SuiProvider, SwapOrder } from "../entities/index.js"
 
 export class SuiIntentService {
   private constructor() {}

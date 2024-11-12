@@ -10,7 +10,7 @@ import {
 } from "viem"
 import { type Wallet, type WalletAccount } from "@mysten/wallet-standard"
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client"
-import type { SuiNetworkType } from "../types.js"
+import type { ChainName, ChainType, SuiNetworkType } from "../types.js"
 
 export type CustomProvider = { request(...args: any): Promise<any> }
 
@@ -43,10 +43,16 @@ export class SuiProvider {
 
 export type ChainProviderType = EvmProvider | SuiProvider
 
-export type ChainProvider<T = undefined> = T extends "evm"
+export type ChainProvider<T extends ChainType | undefined = undefined> = T extends "evm"
   ? EvmProvider
   : T extends "sui"
     ? SuiProvider
     : ChainProviderType
+
+export type GetChainProviderType<T extends ChainName> = T extends "arb"
+  ? ChainProvider<"evm">
+  : T extends "sui"
+    ? ChainProvider<"sui">
+    : never
 
 export type NonEmptyChainProviders = [ChainProvider, ...ChainProvider[]]
