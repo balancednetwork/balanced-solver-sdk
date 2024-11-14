@@ -1,7 +1,6 @@
-import { type Address, type Hash } from "viem"
+import { type Address, type Hash, type TransactionReceipt } from "viem"
 import {
   type ChainName,
-  type ChainConfig,
   type Result,
   type IntentQuoteRequest,
   type IntentQuoteResponse,
@@ -10,6 +9,7 @@ import {
   type IntentExecutionResponse,
   type IntentStatusRequest,
   type IntentStatusResponse,
+  type GetChainConfigType,
 } from "../types.js"
 import { chainConfig, supportedChains } from "../constants.js"
 import { isEvmChainConfig, isSuiChainConfig } from "../guards.js"
@@ -31,7 +31,7 @@ export class IntentService {
    *     "token_src_blockchain_id": "42161",
    *     "token_dst": "0x2::sui::SUI",
    *     "token_dst_blockchain_id": "101",
-   *     "src_amount": "0.00001"
+   *     "src_amount": "10000"
    * }
    *
    * // response
@@ -39,7 +39,7 @@ export class IntentService {
    *   "ok": true,
    *   "value": {
    *      "output": {
-   *        "expected_output":"0.009813013",
+   *        "expected_output":"981301300",
    *        "uuid":"e2795d2c-14a5-4d18-9be6-a257d7c9d274"
    *      }
    *   }
@@ -59,7 +59,6 @@ export class IntentService {
     payload: CreateIntentOrderPayload,
     provider: GetChainProviderType<T["fromChain"]>,
   ): Promise<Result<boolean>> {
-    invariant(payload.amount > 0n, "Invalid amount")
     invariant(payload.amount > 0n, "Invalid amount")
 
     try {
@@ -108,12 +107,35 @@ export class IntentService {
   }
 
   /**
+   * Approve ERC20 amount spending
+   * @param token - ERC20 token address
+   * @param amount - Amount to approve
+   * @param address - Address to approve spending for
+   * @param provider - EVM Provider
+   */
+  static async approve(
+    token: Address,
+    amount: bigint,
+    address: Address,
+    provider: EvmProvider,
+  ): Promise<Result<TransactionReceipt>> {
+    return EvmIntentService.approve(token, amount, address, provider)
+  }
+
+  /**
    * Execute intent order
    * @example
    * // request
    * {
-   *     "intent_tx_hash": "0xba3dce19347264db32ced212ff1a2036f20d9d2c7493d06af15027970be061af",
-   *     "quote_uuid": "a0dd7652-b360-4123-ab2d-78cfbcd20c6b"
+   *     "quote_uuid": "a0dd7652-b360-4123-ab2d-78cfbcd20c6b",
+   *     "fromAddress": "0x601020c5797Cdd34f64476b9bf887a353150Cb9a",
+   *     "toAddress": "0x81600ec58a2efd97f41380370cddf25b7a416d03ee081552becfa9710ea30878",
+   *     "fromChain": "0xa4b1.arbitrum",
+   *     "toChain": "sui",
+   *     "token": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+   *     "amount": "10000",
+   *     "toToken": "0x2::sui::SUI",
+   *     "toAmount": "9813013000",
    * }
    *
    * // response
@@ -219,7 +241,7 @@ export class IntentService {
    *   "value": {
    *      "output": {
    *        "status":3,
-   *        "tx_hash":"0xabcdef"
+   *        "tx_hash":"0xabcdefasdasdsafssadasdsadsadasdsadasdsadsa"
    *      }
    *   }
    * }
@@ -240,13 +262,13 @@ export class IntentService {
   /**
    * Get config of a specific chain
    */
-  public static getChainConfig(chain: ChainName): ChainConfig {
+  public static getChainConfig<T extends ChainName>(chain: T): GetChainConfigType<T> {
     const data = chainConfig[chain]
 
     if (!chainConfig) {
       throw new Error(`Unsupported chain: ${chain}`)
     }
 
-    return data
+    return data as GetChainConfigType<T>
   }
 }

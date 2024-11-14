@@ -49,6 +49,12 @@ export type SuiChainConfig = BaseChainConfig<"sui"> & {
 
 export type ChainConfig = EvmChainConfig | SuiChainConfig
 
+export type GetChainConfigType<T extends ChainName> = T extends "arb"
+  ? EvmChainConfig
+  : T extends "sui"
+    ? SuiChainConfig
+    : never
+
 export type Result<T, E = Error | unknown> = { ok: true; value: T } | { ok: false; error: E }
 
 export type SuiNetworkType = "mainnet" | "testnet" | "devnet" | "localnet"
@@ -58,12 +64,19 @@ export type IntentQuoteRequest = {
   token_src_blockchain_id: string
   token_dst: string
   token_dst_blockchain_id: string
-  src_amount: string // normalised decimal amount (NOT token amount scaled by decimals!!!)
+  src_amount: bigint
+}
+
+export type IntentQuoteResponseRaw = {
+  output: {
+    expected_output: string
+    uuid: string
+  }
 }
 
 export type IntentQuoteResponse = {
   output: {
-    expected_output: string // normalised decimal amount (NOT token amount scaled by decimals!!!)
+    expected_output: bigint
     uuid: string
   }
 }

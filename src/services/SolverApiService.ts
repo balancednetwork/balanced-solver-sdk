@@ -9,20 +9,19 @@ import {
   type IntentStatusRequest,
   type IntentStatusResponse,
   type Result,
+  type IntentQuoteResponseRaw,
 } from "../types.js"
 import invariant from "tiny-invariant"
 
 export class SolverApiService {
   private constructor() {}
 
-  public static async getQuote(
-    intentQuoteRequest: IntentQuoteRequest,
-  ): Promise<Result<IntentQuoteResponse, IntentErrorResponse>> {
-    invariant(intentQuoteRequest.token_src.length > 0, "Empty token_src")
-    invariant(intentQuoteRequest.token_src_blockchain_id.length > 0, "Empty token_src_blockchain_id")
-    invariant(intentQuoteRequest.token_dst.length > 0, "Empty token_dst")
-    invariant(intentQuoteRequest.token_dst_blockchain_id.length > 0, "Empty token_dst_blockchain_id")
-    invariant(+intentQuoteRequest.src_amount > 0, "Invalid src_amount amount")
+  public static async getQuote(payload: IntentQuoteRequest): Promise<Result<IntentQuoteResponse, IntentErrorResponse>> {
+    invariant(payload.token_src.length > 0, "Empty token_src")
+    invariant(payload.token_src_blockchain_id.length > 0, "Empty token_src_blockchain_id")
+    invariant(payload.token_dst.length > 0, "Empty token_dst")
+    invariant(payload.token_dst_blockchain_id.length > 0, "Empty token_dst_blockchain_id")
+    invariant(payload.src_amount > 0n, "src_amount must be greater than 0")
 
     try {
       const response = await fetch(`${SOLVER_API_ENDPOINT}/quote`, {
@@ -30,7 +29,13 @@ export class SolverApiService {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(intentQuoteRequest),
+        body: JSON.stringify({
+          token_src: payload.token_src,
+          token_src_blockchain_id: payload.token_src_blockchain_id,
+          token_dst: payload.token_dst,
+          token_dst_blockchain_id: payload.token_dst_blockchain_id,
+          src_amount: payload.src_amount.toString(),
+        }),
       })
 
       if (!response.ok) {
@@ -40,9 +45,16 @@ export class SolverApiService {
         }
       }
 
+      const quoteResponse: IntentQuoteResponseRaw = await response.json()
+
       return {
         ok: true,
-        value: await response.json(),
+        value: {
+          output: {
+            expected_output: BigInt(quoteResponse.output.expected_output),
+            uuid: quoteResponse.output.uuid,
+          },
+        } satisfies IntentQuoteResponse,
       }
     } catch (e: any) {
       console.error(`[SolverApiService.getQuote] failed. Details: ${JSON.stringify(e)}`)
@@ -58,6 +70,26 @@ export class SolverApiService {
     }
   }
 
+  /**
+   * Execute intent order
+   * @example
+   * // request
+   * {
+   *     "intent_tx_hash": "0xba3dce19347264db32ced212ff1a2036f20d9d2c7493d06af15027970be061af",
+   *     "quote_uuid": "a0dd7652-b360-4123-ab2d-78cfbcd20c6b"
+   * }
+   *
+   * // response
+   * {
+   *   "ok": true,
+   *   "value": {
+   *      "output": {
+   *        "answer":"OK",
+   *        "task_id":"a0dd7652-b360-4123-ab2d-78cfbcd20c6b"
+   *      }
+   *   }
+   * }
+   */
   public static async postExecution(
     intentExecutionRequest: IntentExecutionRequest,
   ): Promise<Result<IntentExecutionResponse, IntentErrorResponse>> {
