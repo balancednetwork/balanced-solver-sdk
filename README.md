@@ -217,19 +217,19 @@ Example status check:
 import { IntentService } from "@balanced/solver-sdk"
 
 const intentStatus = await IntentService.getStatus({
- task_id: "a0dd7652-b360-4123-ab2d-78cfbcd20c6b",
+  task_id: "a0dd7652-b360-4123-ab2d-78cfbcd20c6b",
 })
 
-  /**
-   * Example intentStatus response
-   * {
-   *   "ok": true,
-   *   "value": {
-   *      "output": {
-   *        "status":3, // use IntentStatusCode to map status code
-   *        "tx_hash":"0xabcdefasdasdsafssadasdsadsadasdsadasdsadsa"
-   *      }
-   *   }
-   * }
-   */
+/**
+ * Example intentStatus response
+ * {
+ *   "ok": true,
+ *   "value": {
+ *      "output": {
+ *        "status":3, // use IntentStatusCode to map status code
+ *        "tx_hash":"0xabcdefasdasdsafssadasdsadsadasdsadasdsadsa"
+ *      }
+ *   }
+ * }
+ */
 ```
