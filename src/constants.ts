@@ -9,7 +9,7 @@ export const chainConfig: Record<ChainName, ChainConfig> = {
       type: "evm",
     },
     nid: "0xa4b1.arbitrum",
-    intentContract: "0x1d70D0B9c6b0508E7Bd2B379735CFF035749f187",
+    intentContract: "0x53E0095C57673fC16fA3FA2414bAD3200844Ec17",
     nativeToken: "0x0000000000000000000000000000000000000000",
     supportedTokens: [
       {
