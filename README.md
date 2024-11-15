@@ -201,6 +201,11 @@ if (isAllowanceValid.ok) {
     } else {
       // handle error
     }
+  } else {
+     // allowance is valid
+  
+     const executionResult = await IntentService.executeIntentOrder(intentOrderPayload, evmProvider)
+     // ...rest of result check and status check logic as above
   }
 } else {
   // handle error
