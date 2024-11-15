@@ -1,4 +1,4 @@
-import { type Address, type Hash, parseEventLogs, type TransactionReceipt } from "viem"
+import { type Address, type Hash, parseEventLogs, stringToBytes, type TransactionReceipt } from "viem"
 import { erc20Abi, intentAbi } from "../abis/index.js"
 import { SwapOrder, EvmProvider } from "../entities/index.js"
 import type { ChainConfig, CreateIntentOrderPayload, EvmChainConfig, Result } from "../types.js"
@@ -101,7 +101,11 @@ export class EvmIntentService {
         payload.amount,
         payload.toToken,
         payload.toAmount,
-        new Uint8Array(),
+        stringToBytes(
+          JSON.stringify({
+            quote_uuid: payload.quote_uuid,
+          }),
+        ),
       )
 
       const isNative = payload.token.toLowerCase() == fromChainConfig.nativeToken.toLowerCase()
