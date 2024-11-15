@@ -30,8 +30,8 @@ export const chainConfig: Record<ChainName, ChainConfig> = {
       type: "sui",
     },
     nid: "sui",
-    packageId: "0x2604cc95ad0b2a3e4b2e9e5df8d7a59b8a20ccb4fda58cc6fd7d06777e283a6f",
-    storageId: "0x490f1dbd44fd9bb1bd8fe8438bd8cb062acad8d81915fefc042f5484de7a7edc",
+    packageId: "0xbf8044a8f498b43e48ad9ad8a7d23027a45255903e8b4765dda38da2d1b89600",
+    storageId: "0x78e96d7acd208baba0c37c1fd5d193088fa8f5ea45d18fa4c32eb3721307529d",
     nativeToken: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
     supportedTokens: [
       {
