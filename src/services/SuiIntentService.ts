@@ -2,6 +2,7 @@ import type { ChainConfig, CreateIntentOrderPayload, Result, SuiChainConfig } fr
 import { Transaction, type TransactionResult } from "@mysten/sui/transactions"
 import { signAndExecuteTransaction } from "@mysten/wallet-standard"
 import { SuiProvider, SwapOrder } from "../entities/index.js"
+import { stringToBytes } from "viem"
 
 export class SuiIntentService {
   private constructor() {}
@@ -32,7 +33,11 @@ export class SuiIntentService {
         payload.amount,
         payload.toToken,
         payload.toAmount,
-        new Uint8Array(),
+        stringToBytes(
+          JSON.stringify({
+            quote_uuid: payload.quote_uuid,
+          }),
+        ),
       )
 
       const isNative = payload.token.toLowerCase() == fromChainConfig.nativeToken.toLowerCase()
