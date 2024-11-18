@@ -12,6 +12,7 @@ import {
   type IntentQuoteResponseRaw,
 } from "../types.js"
 import invariant from "tiny-invariant"
+import { retry } from "../utils.js"
 
 export class SolverApiService {
   private constructor() {}
@@ -94,13 +95,15 @@ export class SolverApiService {
     intentExecutionRequest: IntentExecutionRequest,
   ): Promise<Result<IntentExecutionResponse, IntentErrorResponse>> {
     try {
-      const response = await fetch(`${SOLVER_API_ENDPOINT}/execute`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(intentExecutionRequest),
-      })
+      const response = await retry(() =>
+        fetch(`${SOLVER_API_ENDPOINT}/execute`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(intentExecutionRequest),
+        }),
+      )
 
       if (!response.ok) {
         return {

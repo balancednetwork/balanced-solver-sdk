@@ -20,6 +20,7 @@ import {
   type GetChainProviderType,
   SwapOrder,
   type ChainProvider,
+  type ChainProviderType,
 } from "../entities/index.js"
 import { EvmIntentService } from "./EvmIntentService.js"
 import { SuiIntentService } from "./SuiIntentService.js"
@@ -184,23 +185,8 @@ export class IntentService {
     provider: GetChainProviderType<T["fromChain"]>,
   ): Promise<Result<Hash | string>> {
     try {
-      const fromChainConfig = chainConfig[payload.fromChain]
-
-      if (!fromChainConfig) {
-        return {
-          ok: false,
-          error: new Error(`Unsupported fromChain: ${payload.fromChain}`),
-        }
-      }
-
-      const toChainConfig = chainConfig[payload.toChain]
-
-      if (!toChainConfig) {
-        return {
-          ok: false,
-          error: new Error(`Unsupported toChain: ${payload.toChain}`),
-        }
-      }
+      const fromChainConfig = IntentService.getChainConfig(payload.fromChain)
+      const toChainConfig = IntentService.getChainConfig(payload.toChain)
 
       if (isEvmChainConfig(fromChainConfig)) {
         if (provider instanceof EvmProvider) {
@@ -224,6 +210,53 @@ export class IntentService {
         return {
           ok: false,
           error: new Error(`${payload.fromChain} chain not supported`),
+        }
+      }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e,
+      }
+    }
+  }
+
+  /**
+   * Cancel active Intent Order
+   * @param orderId - Intent Order ID (retrievable by getOrder)
+   * @param chain - Chain on which Order was created on
+   * @param provider - EVM or SUI provider
+   * @return string - Transaction Hash
+   */
+  public static async cancelIntentOrder(
+    orderId: bigint,
+    chain: ChainName,
+    provider: ChainProviderType,
+  ): Promise<Result<string>> {
+    try {
+      const chainConfig = IntentService.getChainConfig(chain)
+
+      if (isEvmChainConfig(chainConfig)) {
+        if (provider instanceof EvmProvider) {
+          return EvmIntentService.cancelIntentOrder(orderId, chainConfig, provider)
+        } else {
+          return {
+            ok: false,
+            error: new Error(`[IntentService.cancelIntentOrder] provider should be of type EvmProvider`),
+          }
+        }
+      } else if (isSuiChainConfig(chainConfig)) {
+        if (provider instanceof SuiProvider) {
+          return SuiIntentService.cancelIntentOrder(orderId, chainConfig, provider)
+        } else {
+          return {
+            ok: false,
+            error: new Error(`[IntentService.cancelIntentOrder] provider should be of type SuiProvider`),
+          }
+        }
+      } else {
+        return {
+          ok: false,
+          error: new Error(`${chain} chain not supported`),
         }
       }
     } catch (e) {
