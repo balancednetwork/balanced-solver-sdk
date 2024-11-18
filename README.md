@@ -212,6 +212,42 @@ if (isAllowanceValid.ok) {
 }
 ```
 
+## Cancel Intent Order
+
+Active Intent Order can be cancelled using order ID obtained as explained in [Get Intent Order](#get-intent-order).
+
+Example cancel order:
+
+```typescript
+import { IntentService, SwapOrder, EvmProvider } from "@balanced/solver-sdk"
+
+const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", (window as any).ethereum)
+const intentOrder: Result<SwapOrder> = await IntentService.getOrder(
+  "0xabcdefasdasdsafssadasdsadsadasdsadasdsadsa",
+  IntentService.getChainConfig("arb").intentContract,
+  evmProvider,
+)
+
+if (intentOrder.ok) {
+   const cancelResult: Result<string> = await IntentService.cancelIntentOrder(
+      intentOrder.value.id,
+      "arb",
+      evmProvider,
+   )
+
+   if (cancelResult.ok) {
+      const txHash = cancelResult.value
+      ..
+   } else {
+      // handle error
+   }
+} else {
+   // handle error
+}
+
+
+```
+
 ## Get Intent Order
 
 After the Intent order is created (`executeIntentOrder`), the resulting `txHash` can be used to query created on-chain order data.
@@ -221,10 +257,10 @@ you should invoke `IntentService.getOrder(..)` function.
 Example get order:
 
 ```typescript
-import { IntentService } from "@balanced/solver-sdk"
+import { IntentService, SwapOrder, EvmProvider } from "@balanced/solver-sdk"
 
 const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", (window as any).ethereum)
-const intentOrder: SwapOrder = await IntentService.getOrder(
+const intentOrder: Result<SwapOrder> = await IntentService.getOrder(
   "0xabcdefasdasdsafssadasdsadsadasdsadasdsadsa",
   IntentService.getChainConfig("arb").intentContract,
   evmProvider,

@@ -130,6 +130,36 @@ export class EvmIntentService {
   }
 
   /**
+   * Cancel EVM intent order
+   * @param orderId - Intent order ID
+   * @param chainConfig - EVM chain config
+   * @param provider - EVM provider
+   */
+  static async cancelIntentOrder(
+    orderId: bigint,
+    chainConfig: EvmChainConfig,
+    provider: EvmProvider,
+  ): Promise<Result<Hash>> {
+    try {
+      return {
+        ok: true,
+        value: await provider.walletClient.writeContract({
+          address: chainConfig.intentContract,
+          abi: intentAbi,
+          functionName: "cancel",
+          args: [orderId],
+          chain: undefined,
+        }),
+      }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e,
+      }
+    }
+  }
+
+  /**
    * Retrieve Intent order
    * @param txHash - Transaction hash
    * @param chainConfig - EVM chain config

@@ -1,5 +1,7 @@
 import type { ChainConfig, ChainName, EvmChainConfig, SuiChainConfig } from "./types.js"
 
+export const DEFAULT_MAX_RETRY = 3
+export const DEFAULT_RETRY_DELAY_MS = 2000
 export const SOLVER_API_ENDPOINT = "localhost:3000" // TODO
 
 export const chainConfig: Record<ChainName, ChainConfig> = {

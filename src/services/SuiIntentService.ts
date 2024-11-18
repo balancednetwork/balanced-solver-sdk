@@ -89,6 +89,53 @@ export class SuiIntentService {
     }
   }
 
+  /**
+   * Cancel SUI intent order
+   * @param orderId - Intent order ID
+   * @param chainConfig - SUI chain config
+   * @param provider - SUI provider
+   */
+  public static async cancelIntentOrder(
+    orderId: bigint,
+    chainConfig: SuiChainConfig,
+    provider: SuiProvider,
+  ): Promise<Result<string>> {
+    try {
+      const tx = new Transaction()
+
+      tx.moveCall({
+        target: `${chainConfig.packageId}::main::cancel`,
+        arguments: [tx.object(chainConfig.storageId), tx.pure.string(orderId.toString())],
+      })
+
+      const signerAccount = provider.account
+      const chain = signerAccount.chains[0]
+
+      if (!chain) {
+        return {
+          ok: false,
+          error: new Error("[SuiIntentService.cancelIntentOrder] Chain undefined in signerAccount"),
+        }
+      }
+
+      const result = await signAndExecuteTransaction(provider.wallet, {
+        transaction: tx,
+        account: provider.account,
+        chain: provider.account.chains[0]!,
+      })
+
+      return {
+        ok: true,
+        value: result.digest,
+      }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e,
+      }
+    }
+  }
+
   public static async getNativeCoin(
     tx: Transaction,
     intent: SwapOrder,
