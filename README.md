@@ -212,6 +212,25 @@ if (isAllowanceValid.ok) {
 }
 ```
 
+## Get Intent Order
+
+After the Intent order is created (`executeIntentOrder`), the resulting `txHash` can be used to query created on-chain order data.
+Intent order id is assigned as a part of tx execution, thus if you want to grab an actual order id to be potentially canceled in future
+you should invoke `IntentService.getOrder(..)` function.
+
+Example get order:
+
+```typescript
+import { IntentService } from "@balanced/solver-sdk"
+
+const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", (window as any).ethereum)
+const intentOrder: SwapOrder = await IntentService.getOrder(
+  "0xabcdefasdasdsafssadasdsadsadasdsadasdsadsa",
+  IntentService.getChainConfig("arb").intentContract,
+  evmProvider,
+)
+```
+
 ## Get Intent Status
 
 After Intent Order is created, the resulting `task_id` can be used to query the status of the task.

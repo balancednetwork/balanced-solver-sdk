@@ -19,7 +19,6 @@ import {
   SuiProvider,
   type GetChainProviderType,
   SwapOrder,
-  type ChainProviderType,
   type ChainProvider,
 } from "../entities/index.js"
 import { EvmIntentService } from "./EvmIntentService.js"
