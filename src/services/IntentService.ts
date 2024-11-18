@@ -10,10 +10,18 @@ import {
   type IntentStatusRequest,
   type IntentStatusResponse,
   type GetChainConfigType,
+  type ChainConfig,
 } from "../types.js"
 import { chainConfig, supportedChains } from "../constants.js"
 import { isEvmChainConfig, isSuiChainConfig } from "../guards.js"
-import { EvmProvider, SuiProvider, type GetChainProviderType } from "../entities/index.js"
+import {
+  EvmProvider,
+  SuiProvider,
+  type GetChainProviderType,
+  SwapOrder,
+  type ChainProviderType,
+  type ChainProvider,
+} from "../entities/index.js"
 import { EvmIntentService } from "./EvmIntentService.js"
 import { SuiIntentService } from "./SuiIntentService.js"
 import { SolverApiService } from "./SolverApiService.js"
@@ -223,6 +231,29 @@ export class IntentService {
       return {
         ok: false,
         error: e,
+      }
+    }
+  }
+
+  /**
+   * Retrieve Intent order
+   * @param txHash - Transaction hash
+   * @param chainConfig - chain config (EVM or SUI)
+   * @param provider - provider (EVM or SUI)
+   */
+  static async getOrder<T extends ChainConfig>(
+    txHash: string,
+    chainConfig: T,
+    provider: ChainProvider<T["chain"]["type"]>,
+  ): Promise<Result<SwapOrder>> {
+    if (provider instanceof EvmProvider && isEvmChainConfig(chainConfig)) {
+      return EvmIntentService.getOrder(txHash as Address, chainConfig, provider)
+    } else if (provider instanceof SuiProvider && isSuiChainConfig(chainConfig)) {
+      return SuiIntentService.getOrder(txHash, chainConfig, provider)
+    } else {
+      return {
+        ok: false,
+        error: new Error("Provider and chainConfig miss match"),
       }
     }
   }
