@@ -43,7 +43,7 @@ How to setup local development
 SDK includes predefined configurations of supported chains, tokens and other relevant information for the client to consume.
 
 ```typescript
-import { ChainName, ChainConfig, chainConfig, Token } from "@balanced/solver-sdk"
+import { ChainName, ChainConfig, chainConfig, Token, IntentService } from "@balanced/solver-sdk"
 
 // all supported Intent chains
 const supportedChains: ChainName[] = IntentService.getSupportedChains()
