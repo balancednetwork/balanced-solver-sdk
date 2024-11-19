@@ -104,7 +104,7 @@ export type IntentStatusRequest = {
 
 export type IntentStatusResponse = {
   status: IntentStatusCode
-  tx_hash: string
+  tx_hash?: string // defined only if status is 3
 }
 
 export type CreateIntentOrderPayload = {
