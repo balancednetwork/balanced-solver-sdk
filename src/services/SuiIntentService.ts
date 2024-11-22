@@ -1,8 +1,9 @@
 import type { ChainConfig, CreateIntentOrderPayload, Result, SuiChainConfig } from "../types.js"
 import { Transaction, type TransactionResult } from "@mysten/sui/transactions"
-import { signAndExecuteTransaction } from "@mysten/wallet-standard"
+import { signAndExecuteTransaction, signTransaction } from "@mysten/wallet-standard"
 import { SuiProvider, SwapOrder } from "../entities/index.js"
 import { stringToBytes } from "viem"
+import { bcs } from "@mysten/bcs"
 
 export class SuiIntentService {
   private constructor() {}
@@ -21,6 +22,8 @@ export class SuiIntentService {
     toChainConfig: ChainConfig,
     provider: SuiProvider,
   ): Promise<Result<string>> {
+    console.log("[SuiIntentService.createIntentOrder] payload", payload)
+
     try {
       const intent = new SwapOrder(
         0n,
@@ -33,19 +36,19 @@ export class SuiIntentService {
         payload.amount,
         payload.toToken,
         payload.toAmount,
-        stringToBytes(
-          JSON.stringify({
-            quote_uuid: payload.quote_uuid,
-          }),
-        ),
+        stringToBytes(JSON.stringify({ quote_uuid: payload.quote_uuid })),
       )
 
       const isNative = payload.token.toLowerCase() == fromChainConfig.nativeToken.toLowerCase()
 
       const tx = new Transaction()
-      let coin = isNative
+
+      console.log("[SuiIntentService.createIntentOrder] isNative", isNative)
+
+      let coin: any = isNative
         ? await SuiIntentService.getNativeCoin(tx, intent)
         : await SuiIntentService.getCoin(tx, intent.token, intent.amount.valueOf(), provider.account.address, provider)
+      console.log("[SuiIntentService.createIntentOrder] coin", coin)
 
       tx.moveCall({
         target: `${fromChainConfig.packageId}::main::swap`,
@@ -56,13 +59,16 @@ export class SuiIntentService {
           tx.pure.string(intent.toToken),
           tx.pure.string(intent.destinationAddress),
           tx.pure.u128(intent.toAmount.valueOf()),
-          tx.pure.vector("vector<u8>", [].slice.call(intent.data)),
+          tx.pure(bcs.vector(bcs.u8()).serialize(intent.data)),
         ],
         typeArguments: [intent.token],
       })
 
+      console.log("[SuiIntentService.createIntentOrder] tx after moveCall", tx)
+
       const signerAccount = provider.account
       const chain = signerAccount.chains[0]
+      console.log("[SuiIntentService.signerAccount] tx after moveCall", tx)
 
       if (!chain) {
         return {
@@ -71,11 +77,23 @@ export class SuiIntentService {
         }
       }
 
-      const result = await signAndExecuteTransaction(provider.wallet, {
+      console.log("[SuiIntentService.signerAccount] chain", chain)
+
+      const { bytes, signature } = await signTransaction(provider.wallet, {
         transaction: tx,
         account: provider.account,
-        chain: provider.account.chains[0]!,
+        chain: chain,
       })
+
+      const result = await provider.client.executeTransactionBlock({
+        transactionBlock: bytes,
+        signature,
+        options: {
+          showRawEffects: true,
+        },
+      })
+
+      console.log("[SuiIntentService.signerAccount] signAndExecuteTransaction result", result)
 
       return {
         ok: true,
@@ -140,10 +158,10 @@ export class SuiIntentService {
     tx: Transaction,
     intent: SwapOrder,
   ): Promise<{ $kind: "NestedResult"; NestedResult: [number, number] }> {
-    const [coin] = tx.splitCoins(tx.gas, [intent.amount.valueOf()])
+    const coin = tx.splitCoins(tx.gas, [intent.amount.valueOf()])[0]
 
-    if (!coin) {
-      throw new Error("[SuiIntentService.getNativeCoin] coin undefined")
+    if (coin == undefined) {
+      return Promise.reject(Error("[SuiIntentService.getNativeCoin] coin undefined"))
     }
 
     return coin
