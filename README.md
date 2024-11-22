@@ -111,7 +111,7 @@ EVM Provider example:
 import { EvmProvider } from "@balanced/solver-sdk"
 
 // NOTE: user address should be provided by application when user connects wallet
-const evmProvider = new EvmProvider("0x3FF796F1968C515f6AC2833545B5Dd2cE765A1a1", (window as any).ethereum)
+const evmProvider = new EvmProvider("0x3FF796F1968C515f6AC2833545B5Dd2cE765A1a1", "arb", (window as any).ethereum)
 ```
 
 SUI Provider example (uses [SUI dApp Kit](https://sdk.mystenlabs.com/dapp-kit/):
@@ -142,7 +142,7 @@ import { IntentService, EvmProvider, CreateIntentOrderPayload, IntentStatusCode 
 
 // create EVM provider because "arb" is of ChainType "evm" (defined in ChainConfig type - see section Load SDK Config)
 // NOTE: window can only be accessed client side (browser)
-const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", (window as any).ethereum)
+const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", "arb", (window as any).ethereum)
 
 const intentOrderPayload: CreateIntentOrderPayload = {
   quote_uuid: "a0dd7652-b360-4123-ab2d-78cfbcd20c6b",
@@ -221,7 +221,7 @@ Example cancel order:
 ```typescript
 import { IntentService, SwapOrder, EvmProvider } from "@balanced/solver-sdk"
 
-const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", (window as any).ethereum)
+const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", "arb", (window as any).ethereum)
 const intentOrder: Result<SwapOrder> = await IntentService.getOrder(
   "0xabcdefasdasdsafssadasdsadsadasdsadasdsadsa",
   IntentService.getChainConfig("arb").intentContract,
@@ -259,7 +259,7 @@ Example get order:
 ```typescript
 import { IntentService, SwapOrder, EvmProvider } from "@balanced/solver-sdk"
 
-const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", (window as any).ethereum)
+const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", "arb", (window as any).ethereum)
 const intentOrder: Result<SwapOrder> = await IntentService.getOrder(
   "0xabcdefasdasdsafssadasdsadsadasdsadasdsadsa",
   IntentService.getChainConfig("arb").intentContract,

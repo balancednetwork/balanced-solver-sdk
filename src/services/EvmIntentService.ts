@@ -23,6 +23,13 @@ export class EvmIntentService {
     provider: EvmProvider,
   ): Promise<Result<boolean>> {
     try {
+      if (token == chainConfig.nativeToken) {
+        return {
+          ok: true,
+          value: true,
+        }
+      }
+
       const allowedAmount = await provider.publicClient.readContract({
         address: token,
         abi: erc20Abi,
@@ -61,7 +68,6 @@ export class EvmIntentService {
         abi: erc20Abi,
         functionName: "approve",
         args: [address, amount],
-        chain: undefined,
       })
 
       return {
@@ -117,7 +123,6 @@ export class EvmIntentService {
           abi: intentAbi,
           functionName: "swap",
           args: [intent.toObjectData()],
-          chain: undefined,
           value: isNative ? intent.amount : undefined,
         }),
       }
@@ -148,7 +153,6 @@ export class EvmIntentService {
           abi: intentAbi,
           functionName: "cancel",
           args: [orderId],
-          chain: undefined,
         }),
       }
     } catch (e) {
