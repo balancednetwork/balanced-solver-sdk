@@ -1,8 +1,21 @@
 import type { ChainConfig, ChainName, EvmChainConfig, SuiChainConfig } from "./types.js"
+import { arbitrum } from "viem/chains"
+import type { Chain } from "viem"
 
 export const DEFAULT_MAX_RETRY = 3
 export const DEFAULT_RETRY_DELAY_MS = 2000
 export const SOLVER_API_ENDPOINT = "http://34.224.47.185" // TODO - replace with the production one
+
+export const supportedChains: ChainName[] = ["arb", "sui"]
+
+export function getEvmViemChain(chainName: ChainName): Chain {
+  switch (chainName) {
+    case "arb":
+      return arbitrum
+    default:
+      throw new Error(`Unsupported EVM chain: ${chainName}`)
+  }
+}
 
 export const chainConfig: Record<ChainName, ChainConfig> = {
   ["arb"]: {
@@ -44,5 +57,3 @@ export const chainConfig: Record<ChainName, ChainConfig> = {
     ],
   } satisfies SuiChainConfig,
 } as const
-
-export const supportedChains: ChainName[] = Object.keys(chainConfig) as ChainName[]

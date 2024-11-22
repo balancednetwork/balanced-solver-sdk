@@ -1,6 +1,7 @@
 import {
   type Account,
   type Address,
+  type Chain,
   createPublicClient,
   createWalletClient,
   custom,
@@ -11,21 +12,26 @@ import {
 import { type Wallet, type WalletAccount } from "@mysten/wallet-standard"
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client"
 import type { ChainName, ChainType, SuiNetworkType } from "../types.js"
+import { getEvmViemChain } from "../constants.js"
 
 export type CustomProvider = { request(...args: any): Promise<any> }
 
 export class EvmProvider {
-  public readonly walletClient: WalletClient<CustomTransport, undefined, Account>
+  public readonly walletClient: WalletClient<CustomTransport, Chain, Account>
   public readonly publicClient: PublicClient<CustomTransport>
 
-  constructor(userAddress: Address, provider: CustomProvider) {
+  constructor(userAddress: Address, chain: ChainName, provider: CustomProvider) {
     this.walletClient = createWalletClient({
       account: userAddress,
       transport: custom(provider),
+      chain: getEvmViemChain(chain),
     })
     this.publicClient = createPublicClient({
       transport: custom(provider),
+      chain: getEvmViemChain(chain),
     })
+
+    console.log("Evm provider initialised with chain id:", this.walletClient.chain.id)
   }
 }
 
