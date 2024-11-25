@@ -22,8 +22,6 @@ export class SuiIntentService {
     toChainConfig: ChainConfig,
     provider: SuiProvider,
   ): Promise<Result<string>> {
-    console.log("[SuiIntentService.createIntentOrder] payload", payload)
-
     try {
       const intent = new SwapOrder(
         0n,
@@ -43,12 +41,9 @@ export class SuiIntentService {
 
       const tx = new Transaction()
 
-      console.log("[SuiIntentService.createIntentOrder] isNative", isNative)
-
       let coin: any = isNative
         ? await SuiIntentService.getNativeCoin(tx, intent)
         : await SuiIntentService.getCoin(tx, intent.token, intent.amount.valueOf(), provider.account.address, provider)
-      console.log("[SuiIntentService.createIntentOrder] coin", coin)
 
       tx.moveCall({
         target: `${fromChainConfig.packageId}::main::swap`,
@@ -64,11 +59,8 @@ export class SuiIntentService {
         typeArguments: [intent.token],
       })
 
-      console.log("[SuiIntentService.createIntentOrder] tx after moveCall", tx)
-
       const signerAccount = provider.account
       const chain = signerAccount.chains[0]
-      console.log("[SuiIntentService.signerAccount] tx after moveCall", tx)
 
       if (!chain) {
         return {
@@ -76,8 +68,6 @@ export class SuiIntentService {
           error: new Error("[SuiIntentService.executeOrder] Chain undefined in signerAccount"),
         }
       }
-
-      console.log("[SuiIntentService.signerAccount] chain", chain)
 
       const { bytes, signature } = await signTransaction(provider.wallet, {
         transaction: tx,
@@ -92,8 +82,6 @@ export class SuiIntentService {
           showRawEffects: true,
         },
       })
-
-      console.log("[SuiIntentService.signerAccount] signAndExecuteTransaction result", result)
 
       return {
         ok: true,

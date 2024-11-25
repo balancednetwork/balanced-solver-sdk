@@ -103,6 +103,9 @@ SDK abstracts away the wallet and public RPC clients using `ChainProviderType` T
 - `EvmProvider`: Provider used for EVM type chains (ETH, BSC, etc..). Implemented using [viem](https://viem.sh/docs/clients/wallet#json-rpc-accounts).
 - `SuiProvider`: Provider used for SUI type chains (SUI). Implemented using [@mysten/sui](https://github.com/MystenLabs/sui) and [@mysten/wallet-standard](https://docs.sui.io/standards/wallet-standard).
 
+Optionally, you can supply EVM providers (wallet and public clients) yourself (see `EvmInitializedConfig`).
+SUI accepts only initialized Wallet, Account and Client.
+
 Providers are used to request wallet actions (prompts wallet extension) and make RPC calls to the RPC nodes.
 
 EVM Provider example:
@@ -111,7 +114,11 @@ EVM Provider example:
 import { EvmProvider } from "@balanced/solver-sdk"
 
 // NOTE: user address should be provided by application when user connects wallet
-const evmProvider = new EvmProvider("0x3FF796F1968C515f6AC2833545B5Dd2cE765A1a1", "arb", (window as any).ethereum)
+const evmProvider = new EvmProvider({
+  userAddress: "0x601020c5797Cdd34f64476b9bf887a353150Cb9a",
+  chain: "arb",
+  provider: (window as any).ethereum,
+})
 ```
 
 SUI Provider example (uses [SUI dApp Kit](https://sdk.mystenlabs.com/dapp-kit/):
@@ -125,7 +132,7 @@ const { currentWallet, connectionStatus } = useCurrentWallet()
 
 // check that wallet is connected and account is defined
 if (connectionStatus === "connected" && account) {
-  const suiProvider = new SuiProvider(currentWallet, account, "mainnet")
+  const suiProvider = new SuiProvider({ wallet, account, client })
 } else {
   throw new Error("Wallet or Account undefined. Please connect wallet and select account.")
 }
@@ -142,7 +149,11 @@ import { IntentService, EvmProvider, CreateIntentOrderPayload, IntentStatusCode 
 
 // create EVM provider because "arb" is of ChainType "evm" (defined in ChainConfig type - see section Load SDK Config)
 // NOTE: window can only be accessed client side (browser)
-const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", "arb", (window as any).ethereum)
+const evmProvider = new EvmProvider({
+  userAddress: "0x601020c5797Cdd34f64476b9bf887a353150Cb9a",
+  chain: "arb",
+  provider: (window as any).ethereum,
+})
 
 const intentOrderPayload: CreateIntentOrderPayload = {
   quote_uuid: "a0dd7652-b360-4123-ab2d-78cfbcd20c6b",
@@ -221,7 +232,11 @@ Example cancel order:
 ```typescript
 import { IntentService, SwapOrder, EvmProvider } from "@balanced/solver-sdk"
 
-const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", "arb", (window as any).ethereum)
+const evmProvider = new EvmProvider({
+   userAddress: "0x601020c5797Cdd34f64476b9bf887a353150Cb9a",
+   chain: "arb",
+   provider: (window as any).ethereum
+})
 const intentOrder: Result<SwapOrder> = await IntentService.getOrder(
   "0xabcdefasdasdsafssadasdsadsadasdsadasdsadsa",
   IntentService.getChainConfig("arb").intentContract,
@@ -259,7 +274,11 @@ Example get order:
 ```typescript
 import { IntentService, SwapOrder, EvmProvider } from "@balanced/solver-sdk"
 
-const evmProvider = new EvmProvider("0x601020c5797Cdd34f64476b9bf887a353150Cb9a", "arb", (window as any).ethereum)
+const evmProvider = new EvmProvider({
+  userAddress: "0x601020c5797Cdd34f64476b9bf887a353150Cb9a",
+  chain: "arb",
+  provider: (window as any).ethereum,
+})
 const intentOrder: Result<SwapOrder> = await IntentService.getOrder(
   "0xabcdefasdasdsafssadasdsadsadasdsadasdsadsa",
   IntentService.getChainConfig("arb").intentContract,
