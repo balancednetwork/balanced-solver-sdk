@@ -10,29 +10,52 @@ import {
   type WalletClient,
 } from "viem"
 import { type Wallet, type WalletAccount } from "@mysten/wallet-standard"
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client"
-import type { ChainName, ChainType, SuiNetworkType } from "../types.js"
+import { SuiClient } from "@mysten/sui/client"
+import type { ChainName, ChainType } from "../types.js"
 import { getEvmViemChain } from "../constants.js"
+import { isEvmInitializedConfig, isEvmUninitializedConfig } from "../guards.js"
 
 export type CustomProvider = { request(...args: any): Promise<any> }
+
+export type EvmUninitializedConfig = {
+  userAddress: Address
+  chain: ChainName
+  provider: CustomProvider
+}
+
+export type EvmInitializedConfig = {
+  walletClient: WalletClient<CustomTransport, Chain, Account>
+  publicClient: PublicClient<CustomTransport>
+}
 
 export class EvmProvider {
   public readonly walletClient: WalletClient<CustomTransport, Chain, Account>
   public readonly publicClient: PublicClient<CustomTransport>
 
-  constructor(userAddress: Address, chain: ChainName, provider: CustomProvider) {
-    this.walletClient = createWalletClient({
-      account: userAddress,
-      transport: custom(provider),
-      chain: getEvmViemChain(chain),
-    })
-    this.publicClient = createPublicClient({
-      transport: custom(provider),
-      chain: getEvmViemChain(chain),
-    })
-
-    console.log("Evm provider initialised with chain id:", this.walletClient.chain.id)
+  constructor(payload: EvmUninitializedConfig | EvmInitializedConfig) {
+    if (isEvmUninitializedConfig(payload)) {
+      this.walletClient = createWalletClient({
+        account: payload.userAddress,
+        transport: custom(payload.provider),
+        chain: getEvmViemChain(payload.chain),
+      })
+      this.publicClient = createPublicClient({
+        transport: custom(payload.provider),
+        chain: getEvmViemChain(payload.chain),
+      })
+    } else if (isEvmInitializedConfig(payload)) {
+      this.walletClient = payload.walletClient
+      this.publicClient = payload.publicClient
+    } else {
+      throw new Error("Invalid configuration payload passed to EvmProvider")
+    }
   }
+}
+
+export type SuiInitializedConfig = {
+  wallet: Wallet
+  account: WalletAccount
+  client: SuiClient
 }
 
 export class SuiProvider {
@@ -40,10 +63,10 @@ export class SuiProvider {
   public readonly account: WalletAccount
   public readonly client: SuiClient
 
-  constructor(wallet: Wallet, account: WalletAccount, net: SuiNetworkType) {
-    this.wallet = wallet
-    this.account = account
-    this.client = new SuiClient({ url: getFullnodeUrl(net) })
+  constructor(payload: SuiInitializedConfig) {
+    this.wallet = payload.wallet
+    this.account = payload.account
+    this.client = payload.client
   }
 }
 
